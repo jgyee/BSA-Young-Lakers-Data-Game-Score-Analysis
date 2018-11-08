@@ -1,0 +1,263 @@
+---
+title: "Article 1"
+author: "Justin Yee"
+date: "10/25/2018"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+setwd("~/Desktop/Bruin_Sports/Data_Journalism/Article_1/BSA-Young-Lakers-Data-Game-Score-Analysis")
+
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(norm)
+library(lattice)
+library(foreign)
+library(MASS)
+library(car)
+require(stats)
+require(stats4)
+library(KernSmooth)
+library(fastICA)
+library(cluster)
+library(leaps)
+library(mgcv)
+library(rpart)
+library(pan)
+library(mgcv)
+library(DAAG)
+library(corrplot) 
+library(visreg) 
+library(rgl)
+library(knitr)
+library(scatterplot3d)
+library(leaps)
+library(car)
+library(caret)
+library(bestglm)
+library(GGally)
+library(DT)
+library(xtable)
+
+#Reading in the data sets
+
+Ingram <- read_csv("Ingram_Game_Log.csv")
+  
+Ball <- read_csv("Lonzo_Game_Log.csv")
+
+Kuzma <- read_csv("Kuzma_Game_Log.csv")
+
+Hart <- read_csv("Hart_Game_Log.csv")
+
+Hart_clean <- (Hart[!is.na(Hart$GmSc), - c(1:10, 30)])
+Hart_clean$`FG%`[is.na(Hart_clean$`FG%`)] <- mean(Hart_clean$`FG%`, na.rm = TRUE)
+Hart_clean$`FT%`[is.na(Hart_clean$`FT%`)] <- mean(Hart_clean$`FT%`, na.rm = TRUE)
+Hart_clean$`3P%`[is.na(Hart_clean$`3P%`)] <- mean(Hart_clean$`3P%`, na.rm = TRUE)
+Hart_clean$GmSc <- Hart_clean$GmSc
+
+Ingram_clean <- Ingram[!is.na(Ingram$GmSc),- c(1:10, 30) ]
+Ingram_clean$`FG%`[is.na(Ingram_clean$`FG%`)] <- mean(Ingram_clean$`FG%`, na.rm = TRUE)
+Ingram_clean$`FT%`[is.na(Ingram_clean$`FT%`)] <- mean(Ingram_clean$`FT%`, na.rm = TRUE)
+Ingram_clean$`3P%`[is.na(Ingram_clean$`3P%`)] <- mean(Ingram_clean$`3P%`, na.rm = TRUE)
+
+Kuzma_clean <- Kuzma[!is.na(Kuzma$GmSc),- c(1:10, 30) ]
+Kuzma_clean$`FG%`[is.na(Kuzma_clean$`FG%`)] <- mean(Kuzma_clean$`FG%`, na.rm = TRUE)
+Kuzma_clean$`FT%`[is.na(Kuzma_clean$`FT%`)] <- mean(Kuzma_clean$`FT%`, na.rm = TRUE)
+Kuzma_clean$`3P%`[is.na(Kuzma_clean$`3P%`)] <- mean(Kuzma_clean$`3P%`, na.rm = TRUE)
+
+Ball_clean <- Ball[!is.na(Ball$GmSc),- c(1:10, 30)]
+Ball_clean$`FG%`[is.na(Ball_clean$`FG%`)] <- mean(Ball_clean$`FG%`, na.rm = TRUE)
+Ball_clean$`FT%`[is.na(Ball_clean$`FT%`)] <- mean(Ball_clean$`FT%`, na.rm = TRUE)
+Ball_clean$`3P%`[is.na(Ball_clean$`3P%`)] <- mean(Ball_clean$`3P%`, na.rm = TRUE)
+```
+
+##Keys to Success for the Young Lakers Core
+
+![lonzowire.usatoday.com](Young_Lakers_image.jpg)
+
+
+  With Lebron coming to Los Angeles, the expectations surrounding the Lakers havent't been this high since the Kobe Bryant, Dwight Howard, and Steve Nash team-up. After missing the playoffs for blank consecutive years, the Lakers look to make a playoff run and possibly contend for a championship title with the addition of the NBA's most prominent star. In addition to Lebron James, the Lakers added notable veterans such as Rajon Rondo, Javale McGee, and Lance Stephenson. However, the Lakers remain at their core a very young team, with blossoming players with high potentials. These young players who look to be the future of the franchise are Brandon Ingram, Kyle Kuzma, Josh Hart,
+and Lonzo Ball. In this article, I will focus on these young players, analyzing their individual game log data I retrieved from [Basketball-Reference.com](https://www.basketball-reference.com/) and using John Hollinger's Game Score statistic as a metric in determining the success each player had the last 2017-18 season in each game they played in. Game Score is a more complex metric that was designed to roughly estimate the success of a player's single game. If you are interested in knowing how Game Score is exactly calculated, you can find the informaion in this [link](https://www.nbastuffer.com/analytics101/game-score/). My goal in analyzing this data is to highlight the strengths and weaknesses of each player from the perspective of exactly *how* each succeeded relative to their average performances of the season.
+
+
+####Exploring the Data  
+
+To start my stastical analyisis, I began by exploring the data. First, we can take a quick look at the distributions of Game Score for each player, as well as comparing the mean Game Score for each player in the following charts.   
+   
+```{r, echo = FALSE, warning = FALSE}
+#View histogram of Gamescores
+
+#Hart
+Hart_plot <- ggplot(data = Hart_clean, aes(x = GmSc, color = "purple", fill = "yellow")) +
+  geom_histogram(color = "purple", fill = "yellow", bins = 10)+
+  ggtitle("Hart's Game Scores") + theme(plot.title = element_text(hjust = 0.5))
+
+#Ingram
+Ingram_plot <- ggplot(data = Ingram_clean, aes(x = GmSc, color = "purple", fill = "yellow")) +
+  geom_histogram(color = "purple", fill = "yellow", bins = 10)+
+  ggtitle("Ingram's Game Scores") + theme(plot.title = element_text(hjust = 0.5))
+
+#Kuzma
+Kuzma_plot <- ggplot(data = Kuzma_clean, aes(x = GmSc, color = "purple", fill = "yellow")) +
+  geom_histogram(color = "purple", fill = "yellow", bins = 10)+
+  ggtitle("Kuzma's Game Scores") + theme(plot.title = element_text(hjust = 0.5))
+
+#Ball
+Ball_plot <- ggplot(data = Ball_clean, aes(x = GmSc, color = "purple", fill = "yellow")) +
+  geom_histogram(color = "purple", fill = "yellow", bins = 10)+
+  ggtitle("Ball's Game Scores") + theme(plot.title = element_text(hjust = 0.5))
+
+# Multiple plot function
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+  
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+  
+  numPlots = length(plots)
+  
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                     ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+  
+  if (numPlots==1) {
+    print(plots[[1]])
+    
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+    
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+      
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+
+#Aggregate Plot
+multiplot(Hart_plot, Ingram_plot, Kuzma_plot, Ball_plot, cols = 2)
+```
+
+ From these histograms, we can notice that the distribution of the Game Score's were roughly similiar to normal distributions with the exception of outliers. We want to capture what the greatest predictors are of each individual's Game Score relative to their own average performance on the year. In other words, we want to find out exactly *what* that player did exceptionally well or exceptionally poorly to merit a good or bad game score.
+
+```{r, echo = FALSE, warning = FALSE}
+#Comparison of Mean Game Scores for Each Player
+#Tidy the data
+#Use the gather function to collapse into key-value pairs
+
+Averages_df<- data.frame("Kuzma" = Kuzma$GmSc, "Ingram" = Ingram$GmSc, "Hart" = Hart$GmSc, "Ball" = Ball$GmSc)
+Averages_df <- gather(Averages_df, key = c("Kuzma", "Ingram", "Hart", "Ball"), value = GmSc)
+colnames(Averages_df)<- c("Player", "GameScore")
+ggplot(data = Averages_df, aes(x = Player, y = GameScore,  color = "purple", fill = Player)) +
+  geom_bar(stat = "summary", fun.y = "mean", color = 'black')+
+  ggtitle("Mean Game Scores")+theme(plot.title = element_text(hjust = 0.5))
+
+```
+    
+In the above chart we can see the average Game Scores for each player for the 2017-2018 season. Visually, we can see that the young core all have about the same average Game Scores, with the exception of Hart, who played the least amount of minutes.
+
+####Methodology and Rationale  
+
+From a statistical standpoint, my primary methodology predicting the Game Score statstic using variables from the game logs as my predictive variables through a multiple linear regression model. The rationale behind choosing such a model is for interperatable purposes, as it is clear from the output of this model the effects of each variable in predicting the statistic Game Score.
+
+An essential part of building these models is the question of normalizing the data. Ultimately, I decided I wanted to normalize by individual since this will tell us what the individual should work on more for their own personal game, not compared to everyone else.
+
+To build the models, I tested the subsets up to a total of five predictors through an exhaustive search, choosing the model with the highest adjusted R^2^. If you are interested in learning more about the models built or datasets you can visit the datasets and code on my [github](https://github.com/jgyee/BSA-Young-Lakers-Data-Game-Score-Analysis). The following charts below summarize my results for these models.
+
+```{r, echo = FALSE}
+#Normalizing the data before Model Fitting, leaving Gamescore unscaled
+#So that we can interpret in terms of pure Gamescore
+Hart_normal <- as_data_frame(scale(Hart_clean[-length(Hart_clean)]))
+Hart_normal$GmSc <- Hart_clean$GmSc
+
+Ingram_normal <- as_data_frame(scale(Ingram_clean[, -length(Ingram_clean)]))
+Ingram_normal$GmSc <- Ingram_clean$GmSc  
+
+Kuzma_normal <- as_data_frame(scale(Kuzma_clean[, -length(Kuzma_clean)]))
+Kuzma_normal$GmSc <- Kuzma_clean$GmSc  
+
+Ball_normal <- as_data_frame(scale(Ball_clean[, -length(Ball_clean)]))
+Ball_normal$GmSc <- Ball_clean$GmSc  
+
+#Fitting Models
+Hart_model<- lm(GmSc ~ FG + FGA + FT + AST + STL, data = Hart_normal)
+Ingram_model<- lm(GmSc ~ FG + FGA + FT + AST + TOV, data = Ingram_normal)
+Kuzma_model<- lm(GmSc ~ FG + FGA + FT + AST + TOV, data = Kuzma_normal)
+Ball_model<- lm(GmSc ~ FG + FGA + AST + STL + TOV, data = Ball_normal)
+
+
+#Creating a table of coefficients
+
+Hart_model$coefficients[7] = 0
+Hart_coefficients <- Hart_model$coefficients
+
+Kuzma_model$coefficients[7] = Kuzma_model$coefficients[6]
+Kuzma_model$coefficients[6] = 0
+Kuzma_coefficients <- Kuzma_model$coefficients
+
+Ingram_model$coefficients[7] = Ingram_model$coefficients[6]
+Ingram_model$coefficients[6] = 0
+Ingram_coefficients <- Ingram_model$coefficients
+
+Ball_model$coefficients[7] = Ball_model$coefficients[6]
+Ball_model$coefficients[6] = Ball_model$coefficients[5]
+Ball_model$coefficients[5] = Ball_model$coefficients[4]
+Ball_model$coefficients[4] = 0
+Ball_coefficients <- Ball_model$coefficients
+
+
+
+#Need to add in zeroes for players who didn't have variable in their final model
+Coefficients <- matrix(c(Hart_coefficients, Kuzma_coefficients, Ingram_coefficients, Ball_coefficients), ncol = 4)
+colnames(Coefficients)<- c("Hart", "Kuzma", "Ingram", "Ball")
+rownames(Coefficients)<- c("Intercept", "FG", "FGA", "FT", "AST", "STL", "TOV")
+
+
+kable(Coefficients, caption = "Model Coefficients for Each Player", align = "c")
+
+```
+
+
+####Finding the Keys to Success
+Let us now break up the models and analyze each separately, giving recommendations to each player their "keys to success", and what parts of their game they should work on more, basing our suggestions on the coefficients of the models. 
+
+![lonzowire.usatoday.com](Hart_Image.jpg)
+
+
+For Hart, his field goal atempts most drastically affects his Gamescore negatively relative to his fellow teammates, meaning he should focus on better shot attempts. Although Hart's field goal percentage of 47% is remarkable for a rookie guard, the results of this model suggest that Hart can still improve his game by choosing his shots more wisely. The other coefficients of Hart's model rank all fairly high compared to the rest of the young core, alluding to Hart's strong overall game and lack of offensive deficiencies.
+
+For Kuzma, his turnovers most adversely affect his Gamescore negatively in comparison to the other players, meaning he should focus on being more careful with the ball. In addition, his field goal attempts do not dramatically decrease his Gamescore compared to his fellow teammates. These two factors may be indicative of Kuzma continuing to be aggressive shooting the ball, but to temper that aggression with more patience when driving or passing, which can lead to costly turnovers.
+
+For Ingram, his field goals most positively improve his performance, so he should focus on staying aggressive and being a primary scoring option. His free throw coefficient is lagging behind that of Kuzma and Hart, suggesting that free throws are a large part of his game he can work on. To improve, he can focus on drawing more fouls and get to the line more. Additionally, he can improve his free throw percentage, so that when he does get to the line, he converts those attempts into points.
+
+For Ball, his assists and steals most positively affect his Gamescore relative to the other three players. Unsurprisingly, Lonzo's passing is the strongest part of his game and contributes to the majority of his success in his best games. His made field goals contribute the least to his Gamescore relative to the other three players. For him to succeed, he must keep his assists up, maintain aggressive on defensive possessions, as well as improve on his scoring ability.
+
+Looking across the various models, we have noticed some differences between the players. These results are somewhat suprising, as they give us a different perspective than looking at a player's overall season statistics, such as Josh Hart's 47% FG% on the season telling us that he is an efficient scorer. This compared to Lonzo Ball's shockingly-low 36% FG% from last season. However, we must keep in mind that these statistics are normalized, so they are adjusted for in respect to that player's average performance. This is the key lense of our models we must look through in order to interpret and know why the results are the way they are.
+
+####Conclusion and Further Remarks
+There are two key aspects of our analysis that differentiate it from the typical, more basic analysis of a player's performance. From the perspective of looking at singular games rather than a whole season, we can find different results that may give us deeper insight into the success of these players solely on a game-to-game basis. Addtionally, choosing to normalize based on that player's own performances, we can see statistical differences in their own games rather than comparing it to a metric of other players, such as league averages for box-score statistics. I hope by reaading this article, you have gained some extra insight into the games of the Young Lakers Core. If you wish to read more about further remarks and potential pitfalls, please check out my [github](https://github.com/jgyee/BSA-Young-Lakers-Data-Game-Score-Analysis).
+

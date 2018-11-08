@@ -1,0 +1,21 @@
+---
+title: "Conclusion and Further Remarks"
+author: "Justin Yee"
+date: "11/8/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+####Conclusion and Further Remarks
+There are two key aspects of our analysis that differentiate it from the typical, more basic analysis of a player's performance. From the perspective of looking at singular games rather than a whole season, we can find different results that may give us deeper insight into the success of these players solely on a game-to-game basis. Addtionally, choosing to normalize based on that player's own performances, we can see statistical differences in their own games rather than comparing it to a metric of other players, such as league averages for box-score statistics. However, despite the uniqueness of our analysis, there are still some important concerns we must keep in mind.
+
+With so few data points (only about 60-82 games), there are some difficulties that arise. Due to this small sample size, we are unable to train the model with a higher number of predictive variables, which is the reason I limited the models to a maximum of five predictive variables to try and avoid overfitting. However, as a result, 
+
+Another problem we came across was trying to evaluate individual success based upon the single metric of Gamescore. This decision to use Game Score as our metric effectively constrained the success of our analysis to the accuracy of Game Score as a barometer for success. To further answer these questions, we would have to dive into the robustness and validity of Game Score. While Basketball-Reference.com provides us with a great open-source database, there still lies constraints in our ability to capture game-by-game data of other metrics besides Game Score.
+
+Additionally, because Game Score is a statistic that is calculated using box score statistics, and our predictive variables themselves are box score statistics, there arises an issue of inherent dependencies between our predictive variables and our response variable of Game Score.
+
+Despite these potential pitfalls and constraints on our analysis, the models constructed for this analysis provide some extra insight into the factors that determine success for the young Lakers core. In the world of data analysis, and espcially sports, there is almost never a flawless interpretation of the the analysis. However, there is still much to gain and learn from by taking a closer look at the numbers and potentially uncovering insights made possible through data analytics.
